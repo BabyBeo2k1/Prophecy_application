@@ -1,3 +1,5 @@
+import os
+
 import torch
 
 import torch.nn as nn
@@ -44,13 +46,9 @@ class ACASX(nn.Module):
                 count += size
 
 def main():
-    test_model=ACASX()
-    x=torch.tensor([1,2,3,4,5],dtype=torch.float32)
-    state_dict=test_model.state_dict()
-    i=1
+    #download input
+    #os.system("wget https://raw.githubusercontent.com/safednn-nasa/prophecy_DNN/master/clusterinACAS_0_short.csv -O ./clusterinACAS_0_shrt.csv")
+    pass
 
-    print(state_dict[f"fc{i}.weight"])
-    y=test_model(x)
-    print(y)
 if __name__=='__main__':
     main()
