@@ -4,6 +4,7 @@ import torch
 
 import torch.nn as nn
 import torch.nn.functional as F
+from LayerProperty import LayerProperty
 class ACASX(nn.Module):
     def __init__(self):
         super(ACASX,self).__init__()
@@ -23,11 +24,6 @@ class ACASX(nn.Module):
         x=F.relu(self.fc5(x))
         out =(self.output_layer(x))
         return out
-    def get_weight(self,layer):
-        state_dict=self.state_dict()
-        w=state_dict[f"fc{layer}.weight"]
-        b=state_dict[f"fc{layer}.bias"]
-        return w,b
     def set_weight(self,path):
         with open (path) as f:
             lines = f.readlines()
@@ -44,11 +40,44 @@ class ACASX(nn.Module):
                 size = param.numel()
                 param.data.copy_(weight_tensor[count:count + size].view_as(param))
                 count += size
+    def read_data(self,path):
+        num = 0
+        with open(path) as f:
+            lines = f.readlines()
+            print(len(lines), "examples")
+            acas_train =torch.empty([len(lines), 5], dtype=torch.double)
+            acas_train_labels = torch.zeros(len(lines), dtype=torch.int)
 
+            for l in range(len(lines)):
+                k = [float(stringIn) for stringIn in lines[l].split(',')]  # This is to remove the useless 1 at the start of each string. Not sure why that's there.
+                # acas_train[l+num] = np.zeros(5,dtype=float) #we're asuming that everything is 2D for now. The 1 is just to keep numpy happy.
+                if len(k) > 5:
+                    lab = int(k[5])
+                    # if ((lab == 0) or (lab == 2)):
+                    #  lab = 0
+                    # else:
+                    #  lab = 1
+                    acas_train_labels[l + num] = lab
+
+                count = 0
+                for i in range(0, 5):
+                    # print(count)
+                    acas_train[l + num][i] = k[i]
+
+                    # print(k[i])
+
+        return acas_train, acas_train_labels
 def main():
     #download input
     #os.system("wget https://raw.githubusercontent.com/safednn-nasa/prophecy_DNN/master/clusterinACAS_0_short.csv -O ./clusterinACAS_0_shrt.csv")
-    pass
+    #os.system("wget 'https://raw.githubusercontent.com/safednn-nasa/prophecy_DNN/master/ACASX_layer.txt' -O ./ACASX_layer.txt")
+    test=ACASX()
+    print(test.state_dict().keys())
+    test.set_weight("./ACASX_layer.txt")
+    data=test.read_data("clusterinACAS_0_shrt.csv")
+    ACASX_LP=LayerProperty(test,data)
+    ACASX_LP.get_pattern()
+    print(ACASX_LP.layer_patterns['0'].shape)
 
 if __name__=='__main__':
     main()
