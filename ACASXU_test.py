@@ -72,12 +72,12 @@ def main():
     #os.system("wget https://raw.githubusercontent.com/safednn-nasa/prophecy_DNN/master/clusterinACAS_0_short.csv -O ./clusterinACAS_0_shrt.csv")
     #os.system("wget 'https://raw.githubusercontent.com/safednn-nasa/prophecy_DNN/master/ACASX_layer.txt' -O ./ACASX_layer.txt")
     test=ACASX()
-    print(test.state_dict().keys())
+    print(len(list(test.state_dict().keys())))
     test.set_weight("./ACASX_layer.txt")
     data=test.read_data("clusterinACAS_0_shrt.csv")
     ACASX_LP=LayerProperty(test,data)
     ACASX_LP.get_pattern()
-    print(ACASX_LP.layer_patterns['0'].shape)
+    print(len(ACASX_LP.layer_patterns))
 
 if __name__=='__main__':
     main()
