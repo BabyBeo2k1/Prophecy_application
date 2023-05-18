@@ -22,7 +22,7 @@ class DP():
 
   ########### PRIVATE METHODS ###########
 
-  def _constrain_input(self, model, inputQuery):
+  def _constrain_inputs(self, model, inputQuery):
     # Input layer isn't part of the network, so we'll use the first layer's in_features
     input_features = list(range(0, model.linear_relu_stack[0].in_features))
     # print(f"input: {input_features}")
