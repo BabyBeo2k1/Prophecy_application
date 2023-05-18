@@ -56,7 +56,10 @@ class MarabouCoreDP():
     ## Run Marabou to solve the query
     # print("solving with Marabou...")
     options = createOptions(verbosity=0)
-    return MarabouCore.solve(inputQuery, options, "")
+    result = list(MarabouCore.solve(inputQuery, options, ""))
+    result.append(inputQuery)
+
+    return result
 
   ##################################
 
