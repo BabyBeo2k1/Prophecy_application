@@ -14,7 +14,6 @@ class MarabouCoreDP():
     # Input layer isn't part of the network, so we'll use the first layer's in_features
     input_features = list(range(0, model.linear_relu_stack[0].in_features))
     num_of_vars += len(input_features)
-    # print(f"input: {input_features}")
     inputQuery.setNumberOfVariables(num_of_vars)
     inputQuery = self._set_boundary_for_linear_vars(input_features, inputQuery)
     
@@ -27,7 +26,6 @@ class MarabouCoreDP():
       # constraints for linear layer
       linear_vars = list(range(num_of_vars, num_of_vars + linear_layer.out_features))
       num_of_vars += linear_layer.out_features
-      # print(f"linear: {linear_vars}")
       inputQuery.setNumberOfVariables(num_of_vars)
       inputQuery = self._set_boundary_for_linear_vars(linear_vars, inputQuery)
       inputQuery = self._set_linear_constraints(linear_vars, linear_layer, inputQuery)
@@ -35,7 +33,6 @@ class MarabouCoreDP():
       # constraints for relu layer
       relu_vars = list(range(num_of_vars, num_of_vars + linear_layer.out_features))
       num_of_vars += linear_layer.out_features
-      # print(f"relu: {relu_vars}")
       inputQuery.setNumberOfVariables(num_of_vars)
       inputQuery = self._set_boundary_for_relu_vars(relu_vars, activation_values, inputQuery)
       inputQuery = self._set_relu_constraints(relu_vars, inputQuery)
@@ -46,7 +43,6 @@ class MarabouCoreDP():
     layer = model.final_output
     layer_vars = list(range(num_of_vars, num_of_vars + layer.out_features))
     num_of_vars += layer.out_features
-    # print(f"output: {layer_vars}")
     
     inputQuery.setNumberOfVariables(num_of_vars)
     inputQuery = self._set_boundary_for_linear_vars(layer_vars, inputQuery)
@@ -54,7 +50,6 @@ class MarabouCoreDP():
     inputQuery = self._set_classification_constraints(layer_vars, layer, postcondition, inputQuery)
     
     ## Run Marabou to solve the query
-    # print("solving with Marabou...")
     options = createOptions(verbosity=0)
     result = list(MarabouCore.solve(inputQuery, options, ""))
     result.append(inputQuery)
@@ -68,7 +63,7 @@ class MarabouCoreDP():
       if layer_activations[idx] == "ON": # var > 0
         inputQuery.setLowerBound(var, 1e-6)
         inputQuery.setUpperBound(var, 100)
-        
+
       elif layer_activations[idx] == "OFF":
         inputQuery.setLowerBound(var, 0)
         inputQuery.setUpperBound(var, 0)
@@ -90,7 +85,9 @@ class MarabouCoreDP():
   def _set_linear_constraints(self, layer_vars, layer, inputQuery):
     # in dense layers, each neuron is connected to every neuron in the preceding layer
     # we can check the current layer's in_features to see the size of the preceding layer
-    prev_layer_vars = list(range(layer.out_features - layer.in_features, layer.in_features))
+    prev_layer_size = layer.in_features
+    prev_layer_start_var = layer_vars[0] - prev_layer_size
+    prev_layer_vars = list(range(prev_layer_start_var, prev_layer_start_var + prev_layer_size))
     
     # Ex: x2 = w0*x0 + w1*x1 + b
     # <=> w0*x0 + w1*x1 - x2 = -b
