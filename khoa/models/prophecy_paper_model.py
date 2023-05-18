@@ -48,7 +48,7 @@ class ProphecyPaperNetwork(nn.Module):
     return handles, activation_storage
   
   
-  def attach_layer_output_hook_to_model(self):
+  def attach_layer_output_hook(self):
     # hook fn
     def layer_output_hook(layer_name, result_storage):
       def hook(model, inputs, outputs):
