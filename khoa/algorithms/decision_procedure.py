@@ -1,39 +1,24 @@
 import sys
-import os
-import numpy as np
 sys.path.append('/Users/khoanguyen-cp/gmu/Marabou')
 
 from maraboupy import Marabou
 from maraboupy import MarabouCore
 from maraboupy.Marabou import createOptions
 
-class DP():
+class MarabouCoreDP():
   def solve(self, network_activations, model, postcondition):
+    num_of_vars = 0
     inputQuery = MarabouCore.InputQuery()
-    inputQuery = self._constrain_inputs(model, inputQuery)
-    inputQuery = self._constrain_hidden_layers(model, network_activations, inputQuery)
-    inputQuery = self._constrain_outputs(model, inputQuery, postcondition)
     
-    ## Run Marabou to solve the query
-    # print("solving with Marabou...")
-    options = createOptions(verbosity=0)
-    return MarabouCore.solve(inputQuery, options, "")
-  
-
-  ########### PRIVATE METHODS ###########
-
-  def _constrain_inputs(self, model, inputQuery):
+    # INPUT CONSTRAINTS
     # Input layer isn't part of the network, so we'll use the first layer's in_features
     input_features = list(range(0, model.linear_relu_stack[0].in_features))
+    num_of_vars += len(input_features)
     # print(f"input: {input_features}")
-    inputQuery.setNumberOfVariables(inputQuery.getNumberOfVariables() + len(input_features))
+    inputQuery.setNumberOfVariables(num_of_vars)
     inputQuery = self._set_boundary_for_linear_vars(input_features, inputQuery)
-    return inputQuery
-  
-
-  def _constrain_hidden_layers(self, model, network_activations, inputQuery):
-    num_of_vars = inputQuery.getNumberOfVariables()
-
+    
+    # HIDDEN LAYER CONSTRAINTS
     for relu_layer_idx, activation_values in network_activations.items():
       # each relu step is accompanied by a preceding linear layer of the same size
       relu_layer = model.linear_relu_stack[relu_layer_idx]
@@ -54,13 +39,8 @@ class DP():
       inputQuery.setNumberOfVariables(num_of_vars)
       inputQuery = self._set_boundary_for_relu_vars(relu_vars, activation_values, inputQuery)
       inputQuery = self._set_relu_constraints(relu_vars, inputQuery)
-
-    return inputQuery
-  
-
-  def _constrain_outputs(self, model, inputQuery, postcondition):
-    num_of_vars = inputQuery.getNumberOfVariables()
-
+      
+    # OUTPUT CONSTRAINTS 
     # if we want to check for postcondition of a class, we have to encode its inverse.
     # Ex: given 3 classes, y1, y2, y3. If postcondition is y1, then we have to encode y != y1, i.e. y1 <= y2 or y1 <= y3.
     layer = model.final_output
@@ -72,9 +52,11 @@ class DP():
     inputQuery = self._set_boundary_for_linear_vars(layer_vars, inputQuery)
     inputQuery = self._set_linear_constraints(layer_vars, layer, inputQuery)
     inputQuery = self._set_classification_constraints(layer_vars, layer, postcondition, inputQuery)
-
-    return inputQuery
-  
+    
+    ## Run Marabou to solve the query
+    # print("solving with Marabou...")
+    options = createOptions(verbosity=0)
+    return MarabouCore.solve(inputQuery, options, "")
 
   ##################################
 

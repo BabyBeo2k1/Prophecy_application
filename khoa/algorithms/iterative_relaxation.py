@@ -1,13 +1,13 @@
 
 
-from algorithms.decision_procedure import DP
+from algorithms.decision_procedure import MarabouCoreDP
 import copy
 import torch
 from torch import nn
 
 class IterativeRelaxation():
   def __init__(self):
-    self.dp = DP()
+    self.dp = MarabouCoreDP()
 
   def call(self, model, input_data, postcondition):
     # attach hooks to model to get activation signature of X
@@ -18,7 +18,7 @@ class IterativeRelaxation():
     X = torch.tensor(input_data, dtype=torch.float)
     _logits = model(X)
 
-    status, _, _ = self.dp(activation_signature, model, postcondition)
+    status, _, _ = self.dp.solve(activation_signature, model, postcondition)
     if status == "sat":
       return [activation_signature, postcondition]
     
@@ -27,17 +27,17 @@ class IterativeRelaxation():
     unconstrained_layer_idx = layer_indices.pop()
 
     while unconstrained_layer_idx > 0: 
-      print(f"unconstrained_layer_id: {unconstrained_layer_idx}")
+      # print(f"unconstrained_layer_id: {unconstrained_layer_idx}")
       
       # unconstrain all neurons in the layer
       original_activation = activation_signature[unconstrained_layer_idx]
       activation_signature[unconstrained_layer_idx] = ["--" for val in original_activation]
-      print(activation_signature)
+      # print(activation_signature)
       
-      status, _, __ = self.dp(activation_signature, model, postcondition)
+      status, _, __ = self.dp.solve(activation_signature, model, postcondition)
       
       if status == "sat": # critical layer found
-        print(f"Critical layer found: {unconstrained_layer_idx}")
+        # print(f"Critical layer found: {unconstrained_layer_idx}")
         
         crit_layer_idx = unconstrained_layer_idx
         # add back activations from critical layer
@@ -49,7 +49,7 @@ class IterativeRelaxation():
           crit_layer_activation[neuron_idx] = "--"
           # print(f"--- unconstraining neuron {neuron_idx} in critical layer")
           # print(activation_signature)
-          status, _, __ = self.dp(activation_signature, model, postcondition)
+          status, _, __ = self.dp.solve(activation_signature, model, postcondition)
           
           if status == "sat": # neuron needed, must remain constrained
             # print(f"--- neuron needed")
