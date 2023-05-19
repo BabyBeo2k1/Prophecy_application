@@ -56,7 +56,7 @@ class NetVerifier:
                         for k in range(state_dict[name].shape[0]):
                             equation.addAddend(state_dict[name][k][j],cur+k)
                                             
-                        equation.setScalar(state_dict[keys[i+1]][j])
+                        equation.setScalar(-state_dict[keys[i+1]][j])
                         inputQuery.addEquation(equation)
                     if i<len(keys)-2:
                         for j in range(state_dict[name].shape[1]):
@@ -69,7 +69,7 @@ class NetVerifier:
             out_eq=MarabouCore.Equation(equationtype)
             for i,w in enumerate(output_property):
                 out_eq.addAddend(w,i+cur)
-            out_eq.addScarlar(0.001)
+            out_eq.setScalar(0.001)
             inputQuery.addEquation(out_eq)
             options = createOptions()
 
