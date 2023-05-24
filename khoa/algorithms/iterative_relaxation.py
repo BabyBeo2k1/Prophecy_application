@@ -22,16 +22,17 @@ class IterativeRelaxation():
     if status == "sat":
       return [activation_signature, postcondition]
     
-    layer_indices = sorted(activation_signature.keys())
-    # print(f"layer indices: {layer_indices}")
-    unconstrained_layer_idx = layer_indices.pop()
+    layer_names = list(activation_signature.keys())
+    max_unconstrained_layer_idx = len(layer_names) - 1
+    unconstrained_layer_idx = max_unconstrained_layer_idx
 
-    while unconstrained_layer_idx > 0: 
+    while unconstrained_layer_idx >= 0: 
       # print(f"unconstrained_layer_id: {unconstrained_layer_idx}")
       
       # unconstrain all neurons in the layer
-      original_activation = activation_signature[unconstrained_layer_idx]
-      activation_signature[unconstrained_layer_idx] = ["--" for val in original_activation]
+      layer_name = layer_names[unconstrained_layer_idx]
+      original_activation = activation_signature[layer_name]
+      activation_signature[layer_name] = ["--" for val in original_activation]
       # print(activation_signature)
       
       status, _, _, _ = self.dp.solve(activation_signature, model, postcondition)
@@ -40,12 +41,13 @@ class IterativeRelaxation():
         # print(f"Critical layer found: {unconstrained_layer_idx}")
         
         crit_layer_idx = unconstrained_layer_idx
+        crit_layer_name = layer_names[crit_layer_idx]
         # add back activations from critical layer
-        activation_signature[crit_layer_idx] = copy.deepcopy(original_activation)
-        crit_layer_activation = activation_signature[crit_layer_idx]
+        activation_signature[crit_layer_name] = copy.deepcopy(original_activation)
+        crit_layer_activation = activation_signature[crit_layer_name]
         
         # iteratively unconstrain neurons to see if they are needed
-        for neuron_idx, _val in enumerate(activation_signature[crit_layer_idx]):
+        for neuron_idx, _val in enumerate(activation_signature[crit_layer_name]):
           crit_layer_activation[neuron_idx] = "--"
           # print(f"--- unconstraining neuron {neuron_idx} in critical layer")
           # print(activation_signature)
@@ -58,4 +60,4 @@ class IterativeRelaxation():
         return [activation_signature]
       
       else: 
-        unconstrained_layer_idx = layer_indices.pop()  
+        unconstrained_layer_idx -= 1
