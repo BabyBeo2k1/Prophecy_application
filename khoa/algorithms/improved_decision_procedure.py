@@ -37,6 +37,7 @@ class ImprovedMarabouCoreDP():
 
   def __process_input_layer(self, layer_info, inputQuery):
     input_features = list(range(0, layer_info["in_features"]))
+    # print(f"{layer_info['name']} has variables {input_features}")
     inputQuery.setNumberOfVariables(len(input_features))
     inputQuery = self.__set_boundary_for_unconstrained_linear_vars(input_features, inputQuery)
     return inputQuery
@@ -46,6 +47,7 @@ class ImprovedMarabouCoreDP():
     num_neurons = layer_info["out_features"]
     num_of_vars = inputQuery.getNumberOfVariables()
     layer_vars = list(range(num_of_vars, num_of_vars + num_neurons))
+    # print(f"{type(layer_info['layer']).__name__} layer {layer_info['name']} has variables {layer_vars}")
 
     inputQuery.setNumberOfVariables(num_of_vars + num_neurons)
     inputQuery = self.__set_boundary_for_relu_vars(layer_vars, layer_activation, inputQuery)
@@ -57,6 +59,7 @@ class ImprovedMarabouCoreDP():
     num_neurons = layer_info["out_features"]
     num_of_vars = inputQuery.getNumberOfVariables()
     layer_vars = list(range(num_of_vars, num_of_vars + num_neurons))
+    # print(f"{type(layer_info['layer']).__name__} layer {layer_info['name']} has variables {layer_vars}")
 
     inputQuery.setNumberOfVariables(num_of_vars + num_neurons)
     inputQuery = self.__set_boundary_for_unconstrained_linear_vars(layer_vars, inputQuery)
@@ -68,6 +71,7 @@ class ImprovedMarabouCoreDP():
     num_neurons = layer_info["out_features"]
     num_of_vars = inputQuery.getNumberOfVariables()
     layer_vars = list(range(num_of_vars, num_of_vars + num_neurons))
+    # print(f"{type(layer_info['layer']).__name__} layer {layer_info['name']} has variables {layer_vars}")
 
     inputQuery.setNumberOfVariables(num_of_vars + num_neurons)
     inputQuery = self.__set_boundary_for_unconstrained_linear_vars(layer_vars, inputQuery)
@@ -104,6 +108,7 @@ class ImprovedMarabouCoreDP():
   def __set_relu_constraints(self, layer_vars, inputQuery):
     # each relu step is accompanied by a preceding layer of the same size
     prev_layer_vars = [var - len(layer_vars) for var in layer_vars]
+    # print(f":::RELU CONSTRAINTS::: layer_vars: {layer_vars} - prev_layers_vars: {prev_layer_vars}\n")
     for idx, relu_var in enumerate(layer_vars):
       corresponding_prev_var = prev_layer_vars[idx]
       MarabouCore.addReluConstraint(inputQuery, corresponding_prev_var, relu_var)
@@ -116,6 +121,7 @@ class ImprovedMarabouCoreDP():
     prev_layer_size = layer_info["in_features"]
     prev_layer_start_var = layer_vars[0] - prev_layer_size
     prev_layer_vars = list(range(prev_layer_start_var, prev_layer_start_var + prev_layer_size))
+    # print(f":::LINEAR CONSTRAINTS::: layer_vars: {layer_vars} - prev_layers_vars: {prev_layer_vars}\n")
 
     # Ex: x2 = w0*x0 + w1*x1 + b
     # <=> w0*x0 + w1*x1 - x2 = -b
