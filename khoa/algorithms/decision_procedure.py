@@ -22,7 +22,7 @@ class MarabouCoreDP():
         inputQuery = self.__process_output_layer(layer_info, inputQuery, postcondition)
       
       elif isinstance(layer, torch.nn.ReLU):
-        layer_activation = network_activation[layer_name]
+        layer_activation = network_activation.get(layer_name)
         inputQuery = self.__process_relu_hidden_layer(layer_info, layer_activation, inputQuery)
 
       elif isinstance(layer, torch.nn.Linear):
@@ -48,6 +48,9 @@ class MarabouCoreDP():
     num_of_vars = inputQuery.getNumberOfVariables()
     layer_vars = list(range(num_of_vars, num_of_vars + num_neurons))
     # print(f"{type(layer_info['layer']).__name__} layer {layer_info['name']} has variables {layer_vars}")
+
+    if layer_activation == None: # unconstrained relu layer
+      layer_activation = ["--" for _ in layer_vars]
 
     inputQuery.setNumberOfVariables(num_of_vars + num_neurons)
     inputQuery = self.__set_boundary_for_relu_vars(layer_vars, layer_activation, inputQuery)

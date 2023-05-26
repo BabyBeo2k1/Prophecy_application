@@ -41,9 +41,8 @@ class DecisionTree():
         class_index = value[node_id].argmax()
         class_label = classes[class_index]
         support = int(max(value[node_id].flatten()))
-        
-        sorted_activation_pattern = sorted(activation_pattern, key=lambda x: x[0])
-        processed_activation_pattern = [x[1] for x in sorted_activation_pattern]
+        processed_activation_pattern = self.__process_leaf_activation_pattern(activation_pattern)
+
         sat_postcond = (class_label == 1)
         is_pure = (impurity[node_id] == 0)
         
@@ -58,6 +57,14 @@ class DecisionTree():
     # sort by support, in descending order
     sorted_leaves = sorted(leaves, key=lambda x: -x['support'])
     return sorted_leaves
+  
+
+  def __process_leaf_activation_pattern(self, unprocessed_pattern):
+    # default pattern where every neuron is unconstrained
+    result = [ "--" for _ in range(len(self.X[0])) ] 
+    for neuron_id, activation_status in unprocessed_pattern:
+      result[neuron_id] = activation_status
+    return result
   
 
   def __fit(self):
