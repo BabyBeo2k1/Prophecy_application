@@ -1,7 +1,7 @@
 from sklearn import tree
 import graphviz 
 
-class LayerPropDecisionTree():
+class DecisionTree():
   def __init__(self, df, X_col="X", Y_col="Y"):
     self.X = list(df[X_col])
     self.Y = list(df[Y_col])
