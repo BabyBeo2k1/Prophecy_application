@@ -129,14 +129,14 @@ class MarabouCoreDP():
     # Ex: x2 = w0*x0 + w1*x1 + b
     # <=> w0*x0 + w1*x1 - x2 = -b
     layer = layer_info["layer"]
-    for idx, var in enumerate(layer_vars):
-      coefficients = layer.weight[idx]
+    for neuron_idx, var in enumerate(layer_vars):
+      coefficients = layer.weight[neuron_idx]
       equation = MarabouCore.Equation()
       equation.addAddend(-1, var)
       for prev_idx, prev_var in enumerate(prev_layer_vars):
         equation.addAddend(coefficients[prev_idx], prev_var)
         
-      scalar = 0.0 if layer.bias == None else (-layer.bias)
+      scalar = 0.0 if layer.bias == None else (-layer.bias[neuron_idx])
       equation.setScalar(scalar)
       inputQuery.addEquation(equation)
 
