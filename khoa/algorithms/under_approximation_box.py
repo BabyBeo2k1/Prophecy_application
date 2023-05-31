@@ -1,6 +1,7 @@
 import pulp 
 import torch
-
+import numpy as np
+import pprint
 
 class UnderApproximationBox():
   def solve(self, input_property, attr_min, attr_max, model):
@@ -16,31 +17,82 @@ class UnderApproximationBox():
       layer_name = layer_info['name']
 
       if layer_name == "model_input": continue
-      if layer_name not in input_property: continue
+      elif layer_name == "final_output": continue
+      
+      elif isinstance(layer, torch.nn.Linear):
+        prev_layer_info = layers_info[idx - 1]
+        print("=====================================")
+        # pprint.pprint(f"prev_layer_info for {layer_name}: {prev_layer_info}")
+        self.__set_linear_constraints(layer_info, prev_layer_info, input_property)
+        pprint.pprint(f"layer {layer_name}: {layer_info}")
+
 
       if isinstance(layer, torch.nn.ReLU):
-        prev_layer = layers_info[idx - 1]['layer']
-        activation = input_property[layer_name]
-        pulp_problem = self.__set_relu_constraints(layer_info, prev_layer, activation, pulp_problem, pulp_inputs)
-        
+        prev_layer_info = layers_info[idx - 1]
+        print("=====================================")
+        # pprint.pprint(f"prev_layer_info for {layer_name}: {prev_layer_info}")
+        default_activation = ["--" for _ in range(layer_info['out_features'])]
+        activation = input_property.get(layer_name, default_activation)
+        pulp_problem = self.__set_relu_constraints(layer_info, prev_layer_info, activation, pulp_problem, pulp_inputs)
+        pprint.pprint(f"layer {layer_name}: {layer_info}")
+
     result = pulp_problem.solve()
     for v in pulp_problem.variables():
       print(v.name, "=", v.varValue)
 
     return pulp_problem, result
+  
+
+  def __set_linear_constraints(self, layer_info, prev_layer_info, input_property):
+    current_layer = layer_info['layer']
+    prev_layer = prev_layer_info['layer']
+
+    if prev_layer_info['name'] == 'model_input':
+      layer_info['weight_wrt_input'] = current_layer.weight
+
+    elif isinstance(prev_layer, torch.nn.ReLU):
+      default_activation = ["--" for _ in range(prev_layer_info['out_features'])]
+      prev_activations = input_property.get(prev_layer_info['name'], default_activation)
+      layer_info['weight_wrt_input'] = torch.tensor([])
+
+      for neuron in range(layer_info['out_features']):
+        # a tensor of size (1 x prev_layer_info['out_features'])
+        weight_wrt_to_prev_layer = [
+          current_layer.weight[neuron][idx].item() if activation == "ON" else 0.0
+          for idx, activation in enumerate(prev_activations)
+        ]
+        weight_wrt_to_prev_layer = torch.tensor([weight_wrt_to_prev_layer])
+
+        # a tensor of size (prev_layer_info['out_features'] x num_of_inputs)
+        prev_layer_weight_wrt_to_input = prev_layer_info['weight_wrt_input']
+
+        # final result is tensor of size (1 x num_of_inputs)
+        weight_wrt_input = torch.mm(weight_wrt_to_prev_layer, prev_layer_weight_wrt_to_input)
+        weight_wrt_input = torch.tensor(weight_wrt_input)
+        layer_info['weight_wrt_input'] = torch.cat((layer_info['weight_wrt_input'], weight_wrt_input))
+
+      # print(f"layer_info['name']: {layer_info['weight_wrt_input']}")
 
 
-  def __set_relu_constraints(self, layer_info, prev_layer, activation, pulp_problem, pulp_inputs):
+  def __set_relu_constraints(self, layer_info, prev_layer_info, activation, pulp_problem, pulp_inputs):
+    prev_layer = prev_layer_info['layer']
+    weight_wrt_input = prev_layer_info['weight_wrt_input']
+
+    # for relu layer, its "weight" is the same as the prev layer
+    layer_info['weight_wrt_input'] = weight_wrt_input
+
+    # print(f"\nRELU CONSTRAINTS FOR LAYER: {layer_info['name']}\n")
     for neuron in range(layer_info["in_features"]):
-      coefficients = prev_layer.weight[neuron]
+      coefficients = weight_wrt_input[neuron]
       neuron_activation = activation[neuron]
 
       expressions = []
       for idx, (d_lo, d_hi) in enumerate(pulp_inputs):
         if coefficients[idx] >= 0: # d_hi
-          expressions.append(coefficients[idx] * d_hi)
+          expressions.append(coefficients[idx].item() * d_hi)
         else: 
-          expressions.append(coefficients[idx] * d_lo)
+          expressions.append(coefficients[idx].item() * d_lo)
+      # pprint.pprint(f"neuron {neuron} has expressions: {expressions}\n\n")
 
       bias = 0.0 if prev_layer.bias == None else (- prev_layer.bias[neuron])
       if neuron_activation == "ON":
