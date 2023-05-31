@@ -1,7 +1,6 @@
 import pulp 
 import torch
 import numpy as np
-import pprint
 
 class UnderApproximationBox():
   def solve(self, input_property, attr_min, attr_max, model):
@@ -21,20 +20,14 @@ class UnderApproximationBox():
       
       elif isinstance(layer, torch.nn.Linear):
         prev_layer_info = layers_info[idx - 1]
-        print("=====================================")
-        # pprint.pprint(f"prev_layer_info for {layer_name}: {prev_layer_info}")
         self.__set_linear_constraints(layer_info, prev_layer_info, input_property)
-        pprint.pprint(f"layer {layer_name}: {layer_info}")
 
 
       if isinstance(layer, torch.nn.ReLU):
         prev_layer_info = layers_info[idx - 1]
-        print("=====================================")
-        # pprint.pprint(f"prev_layer_info for {layer_name}: {prev_layer_info}")
         default_activation = ["--" for _ in range(layer_info['out_features'])]
         activation = input_property.get(layer_name, default_activation)
         pulp_problem = self.__set_relu_constraints(layer_info, prev_layer_info, activation, pulp_problem, pulp_inputs)
-        pprint.pprint(f"layer {layer_name}: {layer_info}")
 
     result = pulp_problem.solve()
     for v in pulp_problem.variables():
@@ -71,8 +64,6 @@ class UnderApproximationBox():
         weight_wrt_input = torch.tensor(weight_wrt_input)
         layer_info['weight_wrt_input'] = torch.cat((layer_info['weight_wrt_input'], weight_wrt_input))
 
-      # print(f"layer_info['name']: {layer_info['weight_wrt_input']}")
-
 
   def __set_relu_constraints(self, layer_info, prev_layer_info, activation, pulp_problem, pulp_inputs):
     prev_layer = prev_layer_info['layer']
@@ -81,7 +72,6 @@ class UnderApproximationBox():
     # for relu layer, its "weight" is the same as the prev layer
     layer_info['weight_wrt_input'] = weight_wrt_input
 
-    # print(f"\nRELU CONSTRAINTS FOR LAYER: {layer_info['name']}\n")
     for neuron in range(layer_info["in_features"]):
       coefficients = weight_wrt_input[neuron]
       neuron_activation = activation[neuron]
@@ -92,7 +82,6 @@ class UnderApproximationBox():
           expressions.append(coefficients[idx].item() * d_hi)
         else: 
           expressions.append(coefficients[idx].item() * d_lo)
-      # pprint.pprint(f"neuron {neuron} has expressions: {expressions}\n\n")
 
       bias = 0.0 if prev_layer.bias == None else (- prev_layer.bias[neuron])
       if neuron_activation == "ON":
