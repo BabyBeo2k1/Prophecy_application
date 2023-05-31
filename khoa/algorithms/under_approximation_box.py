@@ -61,7 +61,6 @@ class UnderApproximationBox():
 
         # final result is tensor of size (1 x num_of_inputs)
         weight_wrt_input = torch.mm(weight_wrt_to_prev_layer, prev_layer_weight_wrt_to_input)
-        weight_wrt_input = torch.tensor(weight_wrt_input)
         layer_info['weight_wrt_input'] = torch.cat((layer_info['weight_wrt_input'], weight_wrt_input))
 
 
