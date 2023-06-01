@@ -40,7 +40,7 @@ class BaseModel(nn.Module):
   
   def get_layers_info(model):
     result = []
-    
+
     for name, module in list(model.named_modules()):
       nested_modules = list(module.named_modules())[1:]
       # only process the layers, ignore all other containers
@@ -57,7 +57,7 @@ class BaseModel(nn.Module):
           "out_features": prev_layer_info["out_features"], 
           "layer": module,
         }
-        
+
       elif isinstance(module, torch.nn.Linear):
         layer_info = { 
           "name": name,
@@ -65,18 +65,19 @@ class BaseModel(nn.Module):
           "out_features": module.out_features, 
           "layer": module,
         }
-
-      # if the first layer to be processed, then add information about the model's input layer
-      # using the first layer's info
-      if len(result) == 0:
-        input_layer_info = {
-          "name": "model_input",
-          "in_features": layer_info["in_features"], 
-          "out_features": layer_info["in_features"], 
-          "layer": None,
-        }
-        result.append(input_layer_info)
+        # if the first layer to be processed, then add information about the model's input layer
+        # using the first layer's info
+        if len(result) == 0:
+          input_layer_info = {
+            "name": "model_input",
+            "in_features": layer_info["in_features"], 
+            "out_features": layer_info["in_features"], 
+            "layer": None,
+          }
+          result.append(input_layer_info)
       
+      else: continue
+
       result.append(layer_info)
     return result
 
