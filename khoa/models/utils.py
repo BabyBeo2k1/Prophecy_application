@@ -4,7 +4,10 @@ def attach_relu_activation_hook(model):
   # hook fn
   def relu_activation_hook(layer_name, result_storage):
     def hook(_model, _inputs, outputs):
-      result_storage[layer_name] = ["ON" if val > 0 else "OFF" for val in outputs[0]]
+      result_storage[layer_name] = [
+        ["ON" if val > 0 else "OFF" for val in output]
+        for output in outputs
+      ]
     return hook
   
   handles = []
