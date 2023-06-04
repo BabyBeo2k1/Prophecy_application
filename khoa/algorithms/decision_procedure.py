@@ -5,11 +5,12 @@ sys.path.append('/Users/khoanguyen-cp/gmu/Marabou')
 
 from maraboupy import MarabouCore
 from maraboupy.Marabou import createOptions
+from models.utils import get_layers_info
 
 class MarabouCoreDP():
   def solve(self, network_activation, model, postcondition):
     inputQuery = MarabouCore.InputQuery()
-    layers_info = model.get_layers_info()
+    layers_info = get_layers_info(model)
 
     for index, layer_info in enumerate(layers_info):
       layer = layer_info['layer']

@@ -2,9 +2,11 @@ import pulp
 import torch
 import numpy as np
 
+from models.utils import get_layers_info
+
 class UnderApproximationBox():
   def solve(self, input_property, attr_min, attr_max, model):
-    layers_info = model.get_layers_info()
+    layers_info = get_layers_info(model)
 
     # Prepare inputs and objective function
     num_of_inputs = len(attr_min)

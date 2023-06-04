@@ -1,8 +1,7 @@
 import torch
 from torch import nn
-from models.base_model import BaseModel
 
-class TestModel(BaseModel):
+class TestModel(nn.Module):
   def __init__(self):
     super().__init__()
     self.sequential_stack = nn.Sequential(
@@ -23,7 +22,7 @@ class TestModel(BaseModel):
 
 
 
-class ProphecyPaperNetwork(BaseModel):
+class ProphecyPaperNetwork(nn.Module):
   def __init__(self):
     super().__init__()
     self.linear_relu_stack = nn.Sequential(
