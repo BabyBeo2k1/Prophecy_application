@@ -1,10 +1,11 @@
 import os
 
+import numpy as np
 import torch
 
 import torch.nn as nn
 import torch.nn.functional as F
-from LayerProperty import LayerProperty
+from PropertyExtractor import LayerProperty
 class ACASX(nn.Module):
     def __init__(self):
         super(ACASX,self).__init__()
@@ -75,6 +76,7 @@ def main():
     print(list(test.state_dict().keys()))
     test.set_weight("./ACASX_layer.txt")
     data=test.read_data("clusterinACAS_0_shrt.csv")
+    torch.save(test.state_dict(),"acasxu.pt")
     ACASX_LP=LayerProperty(test,data)
     ACASX_LP.get_pattern()
     print(len(ACASX_LP.layer_patterns))
