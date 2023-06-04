@@ -4,10 +4,7 @@ def attach_relu_activation_hook(model):
   # hook fn
   def relu_activation_hook(layer_name, result_storage):
     def hook(_model, _inputs, outputs):
-      result_storage[layer_name] = [
-        ["ON" if val > 0 else "OFF" for val in output]
-        for output in outputs
-      ]
+      result_storage[layer_name] = outputs > 0
     return hook
   
   handles = []
@@ -37,6 +34,23 @@ def attach_layer_output_hook(model):
     handle = module.register_forward_hook(layer_output_hook(name, output_storage))
     handles.append(handle)  
   return handles, output_storage
+
+
+def turn_bool_activation_to_str(activation_signature):
+  for layer_name, activations in activation_signature.items():
+    activation_signature[layer_name] = [
+      ["ON" if val else "OFF" for val in activation]
+      for activation in activations
+    ]
+  return activation_signature
+
+
+def turn_bool_activation_to_int(activation_signature, to_list=False):
+  for layer_name, activations in activation_signature.items():
+    activation_signature[layer_name] = torch.where(activations, 1, 0)
+    if to_list: 
+      activation_signature[layer_name] = activation_signature[layer_name].tolist()
+  return activation_signature
   
   
 def get_layers_info(model):
