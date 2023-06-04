@@ -3,7 +3,7 @@
 import copy
 import torch
 from algorithms.decision_procedure import MarabouCoreDP
-from models.utils import attach_relu_activation_hook, attach_layer_output_hook
+from models.utils import attach_relu_activation_hook, attach_layer_output_hook, turn_bool_activation_to_str
 
 class IterativeRelaxation():
   def __init__(self):
@@ -18,6 +18,7 @@ class IterativeRelaxation():
     X = torch.tensor(input_data, dtype=torch.float)
     _logits = model(X)
 
+    activation_signature = self.__process_activation_signature(activation_signature)
     status, _, _, _ = self.dp.solve(activation_signature, model, postcondition)
     if status == "sat":
       return [activation_signature, postcondition]
@@ -61,3 +62,10 @@ class IterativeRelaxation():
       
       else: 
         unconstrained_layer_idx -= 1
+
+
+  def __process_activation_signature(self, activation_signature):
+    activation_signature = turn_bool_activation_to_str(activation_signature)
+    for layer_name, activations in activation_signature.items():
+      activation_signature[layer_name] = activations[0]
+    return activation_signature
