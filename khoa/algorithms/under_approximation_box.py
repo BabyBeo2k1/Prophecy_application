@@ -24,8 +24,7 @@ class UnderApproximationBox():
         prev_layer_info = layers_info[idx - 1]
         self.__set_linear_constraints(layer_info, prev_layer_info, input_property)
 
-
-      if isinstance(layer, torch.nn.ReLU):
+      elif isinstance(layer, torch.nn.ReLU):
         prev_layer_info = layers_info[idx - 1]
         default_activation = ["--" for _ in range(layer_info['out_features'])]
         activation = input_property.get(layer_name, default_activation)
