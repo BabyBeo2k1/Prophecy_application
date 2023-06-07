@@ -7,7 +7,7 @@ from maraboupy import MarabouCore
 from maraboupy.Marabou import createOptions
 from models.utils import get_layers_info
 
-class ImprovedMarabouCoreDP():
+class MarabouCoreDP():
   def __init__(self, lower_bound=-100, upper_bound=100):
     self.upper_bound = upper_bound
     self.lower_bound = lower_bound

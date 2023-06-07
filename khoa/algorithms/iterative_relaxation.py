@@ -2,12 +2,12 @@
 
 import copy
 import torch
-from algorithms.improved_decision_procedure import ImprovedMarabouCoreDP
+from algorithms.decision_procedure import MarabouCoreDP
 from models.utils import attach_relu_activation_hook, turn_bool_activation_to_str
 
 class IterativeRelaxation():
   def __init__(self):
-    self.dp = ImprovedMarabouCoreDP()
+    self.dp = MarabouCoreDP()
 
   def call(self, model, input_data, input_ranges, specification):
     # attach hooks to model to get activation signature of X
