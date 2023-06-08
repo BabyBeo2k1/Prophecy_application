@@ -42,7 +42,8 @@ class NetVerifier:
                 continue
             else:
                 num_node += state_dict[key].shape[0]+state_dict[key].shape[1]
-        large = 10e6
+        large = 10e2
+        small=10e-2
         # define c
         for id,con_prop in enumerate(property):
 
@@ -68,10 +69,9 @@ class NetVerifier:
                     a=base+j
                     ip_net.setLowerBound(base + j, 0)
                     if cls.encode_status[pattern[i][j]] > 0:
-                        ip_net.setLowerBound(base+j-len(pattern[i]),1e-6)
-                        ip_net.setLowerBound(base + j, 1e-6)
+                        ip_net.setLowerBound(base+j-len(pattern[i]),small)
+                        ip_net.setLowerBound(base + j, small)
                     if cls.encode_status[pattern[i][j]] < 0:
-
                         ip_net.setUpperBound(base+j-len(pattern[i]),0)
                         ip_net.setUpperBound(base + j, 0)
                 base += len(pattern[i])
@@ -88,19 +88,20 @@ class NetVerifier:
                 base+=2*len(pattern[i])
             #define contradict property
 
-            equationtype = MarabouCore.Equation.EquationType(1)
+            equationtype = MarabouCore.Equation.EquationType(2)
             out_eq = MarabouCore.Equation(equationtype)
             for i in range(len(con_prop)-1):
 
                 out_eq.addAddend(con_prop[i],base+i)
             out_eq.setScalar(con_prop[-1]+1e-6)
             ip_net.addEquation(out_eq)
-            for i in range(ip_net.getNumberOfVariables()):
-                print(f"{i} upperbound {ip_net.getUpperBound(i)}, lower bound {ip_net.getLowerBound(i)}")
-            o=ip_net.getNumOutputVariables()
+
             options = createOptions(snc=True)
 
             stats = MarabouCore.solve(ip_net, options, "")
+
+            for i in range(ip_net.getNumberOfVariables()):
+                print(f"{i} upperbound {ip_net.getUpperBound(i)}, lower bound {ip_net.getLowerBound(i)}")
             if stats[0]=="sat":
                 return stats,ip_net
 

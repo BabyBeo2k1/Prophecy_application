@@ -55,3 +55,4 @@ A=[[-1.0,1.0,0.0]]
 
 pattern0=[['on','off'],['skip','skip']]
 print(NetVerifier.DP(pattern0,A,test))
+print()
