@@ -1,9 +1,9 @@
 import os
 import sys
 import copy
-
-import torch.nn
-
+import torch
+import torch.nn as nn
+import numpy as np
 print(sys.path)
 sys.path.append("/home/lqhung2001/Downloads/Marabou")
 from maraboupy import MarabouCore
@@ -14,8 +14,65 @@ class NetVerifier:
         'off':-1,
         'skip':0
     }
+    large=10e6
+    small=10e-6
     def __init__(self):
         pass
+    def composeDP(self,net:torch.nn.Module,postcondition:list, pattern:list,inp:torch.Tensor):
+        DP=MarabouCore.InputQuery()
+        num_nodes=self.getNumNodes(net,inp)
+        DP.setNumberOfVariables(num_nodes)
+        var={
+            "DP":DP,
+            "base":0,
+            "patternid":0
+        }
+        for module in net.modules():
+            if module.__class__.__name__!=net.__class__.__name__:
+                var=self.netDP(module, var,pattern)
+        DP=self.outDP(postcondition,var)
+        option= createOptions(snc=True)
+        stats=MarabouCore.solve(DP,option,"")
+        if stats[0]=='sat':
+            return False
+        return True
+    def netDP(self,module,var,pattern):
+        if type(module)==nn.Linear:
+            return self.LinearDP(module,var,pattern)
+        if type(module)==nn.ReLU:
+            return self.ReLUDP(module,var,pattern)
+
+    def LinearDP(self,module:nn.Linear,var):
+        params=[]
+        base=var['base']
+        DP=var['DP']
+        for param in module.parameters():
+            params.append(param.data.detach().numpy())
+        pass
+    def ReLUDP(self,module,var):
+        pass
+    def outDP(self,postcondition,var):
+        pass
+    def getNumNodes(self,net,inp):
+        # Define a dictionary to store the layer outputs
+        layer_outputs = {}
+        # Define a forward hook function
+        def forward_hook(module, input, output):
+            layer_outputs[module] = output.detach().numpy()
+            # Register the forward hook for each layer
+        for name, module in net.named_modules():
+            module.register_forward_hook(forward_hook)
+        # Perform forward pass
+        output_tensor = net(inp)
+        flatten=inp.view(inp.shape[0],-1)
+
+        res=flatten.shape[1]
+        # Access the forward output of each layer
+        for module, output in layer_outputs.items():
+            if module.__class__.__name__ != net.__class__.__name__:
+                flatten =output.view(output.shape[0],-1)
+                res+=flatten.shape[1]
+        return res
     @classmethod
     def DP(cls, pattern:list,property:list,net:torch.nn.Module):
         """
