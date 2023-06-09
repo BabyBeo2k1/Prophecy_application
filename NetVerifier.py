@@ -22,10 +22,14 @@ class NetVerifier:
         DP=MarabouCore.InputQuery()
         num_nodes=self.getNumNodes(net,inp)
         DP.setNumberOfVariables(num_nodes)
+        for i in range(num_nodes):
+            DP.setLowerBound(i,-self.large)
+            DP.setUpperBound(i,self.large)
         var={
             "DP":DP,
             "base":0,
-            "patternid":0
+            "patternid":0,
+            'input':inp
         }
         for module in net.modules():
             if module.__class__.__name__!=net.__class__.__name__:
@@ -38,21 +42,50 @@ class NetVerifier:
         return True
     def netDP(self,module,var,pattern):
         if type(module)==nn.Linear:
-            return self.LinearDP(module,var,pattern)
+            return self.LinearDP(module,var)
         if type(module)==nn.ReLU:
             return self.ReLUDP(module,var,pattern)
 
     def LinearDP(self,module:nn.Linear,var):
         params=[]
-        base=var['base']
-        DP=var['DP']
         for param in module.parameters():
             params.append(param.data.detach().numpy())
-        pass
-    def ReLUDP(self,module,var):
-        pass
+        out=module(var['input'])
+        for i in range(params[0].shape[0]):
+            equation=MarabouCore.Equation()
+            equation.addAddend(-1,var['base']+i+param.shape[1])
+            for j in range(params[0].shape[1]):
+                equation.addAddend(params[0][i][j],var['base']+j)
+            equation.setScalar(-params[1][i])
+            var['DP'].addEquation(equation)
+        var['input']=out
+        var['base']+=params[0].shape[0]+params[0].shape[1]
+        return var
+    def ReLUDP(self,module,var,pattern):
+        flat=module(var['input']).view(var['input'].shape[0],-1)
+        for i in range(len(pattern[var['patternid']])):
+            MarabouCore.addReLuConstraint(var["DP"],var['base']+i,var['base']+i+len(pattern[var['patternid']]))
+            var['DP'].setLowerBound(var['base']+i+len(pattern[var['patternid']]),0)
+            if self.encode_status[pattern[i]]>0:
+                var['DP'].setLowerBound(var['base']+i+len(pattern[var['patternid']]),self.small)
+            if self.encode_status[pattern[i]]<0:
+                var['DP'].setUpperBound(var['base'] + i + len(pattern[var['patternid']]), 0)
+        var['base']+=2*len(pattern)
+        var['input']=module(var['input'])
+        var["patternid"]+=1
+        return var
+
     def outDP(self,postcondition,var):
-        pass
+        disjunction=[]
+        for condition in postcondition:
+            equationtype=MarabouCore.EquationType(1)
+            equation=MarabouCore.Equation(equationtype)
+            for i in range(len(condition)-1):
+                equation.addAddend(condition[i],i+var['base'])
+            equation.setScalar(-condition[-1])
+            disjunction.append(equation)
+        MarabouCore.addDisjunctionConstraint(var["DP"],disjunction)
+        return var["DP"]
     def getNumNodes(self,net,inp):
         # Define a dictionary to store the layer outputs
         layer_outputs = {}

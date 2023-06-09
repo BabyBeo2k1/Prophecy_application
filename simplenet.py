@@ -52,7 +52,8 @@ A=[[-1.0,1.0,0.0]]
 #     print(patterns[i])
 #     print(outputs[i])
 #     print(res[i])
-
+ip=torch.rand((1,2))
 pattern0=[['on','off'],['skip','skip']]
-print(NetVerifier.DP(pattern0,A,test))
+verifier=NetVerifier()
+print(verifier.composeDP(test,A,pattern0,ip))
 print()
