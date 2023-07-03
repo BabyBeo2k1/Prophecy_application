@@ -8,13 +8,12 @@ class netProperty():
         False:'off',
     }
     @classmethod
-    def get_input_property(cls,net,data):
+    def get_decision_pattern(cls,net:torch.nn.Module,data):
         patterns=[]
         outputs=[]
-
-        for idx,datapoint in enumerate(data):
+        inputs=[]
+        for idx,ip in enumerate(data):
             pattern=[]
-            ip,op=datapoint
             layer_outputs={}
             ip=torch.tensor(ip,dtype=torch.float)
             def forward_hook(module, input, output):
@@ -25,7 +24,7 @@ class netProperty():
 
                     module.register_forward_hook(forward_hook)
             net.eval()
-            out=net(ip)
+            out=net(ip).detach().numpy()
 
             for module, output in layer_outputs.items():
                 pattern.append(list((output>0).detach().numpy()))
@@ -36,7 +35,8 @@ class netProperty():
                     pattern[i][j]=cls.encoder_status[pattern[i][j]]
             patterns.append(pattern)
             outputs.append(out)
-        return patterns,outputs
+            inputs.append(ip)
+        return zip(patterns,outputs,inputs)
 
 
 

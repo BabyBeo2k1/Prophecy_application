@@ -1,11 +1,11 @@
 import os
-
+from iterative_relaxation import Algorithm1
 import numpy as np
 import torch
-
+from PropertyExtractor import netProperty
 import torch.nn as nn
 import torch.nn.functional as F
-from PropertyExtractor import LayerProperty
+from NetVerifier import NetVerifier
 class ACASX(nn.Module):
     def __init__(self):
         super(ACASX,self).__init__()
@@ -75,11 +75,35 @@ def main():
     test=ACASX()
     print(list(test.state_dict().keys()))
     test.set_weight("./ACASX_layer.txt")
-    data=test.read_data("clusterinACAS_0_shrt.csv")
-    torch.save(test.state_dict(),"acasxu.pt")
-    ACASX_LP=LayerProperty(test,data)
-    ACASX_LP.get_pattern()
-    print(len(ACASX_LP.layer_patterns))
+    # data=test.read_data("clusterinACAS_0_shrt.csv")
+    # ip=torch.tensor(data[0][:5000],dtype=torch.float)
+    # print(ip)
 
+    A=[[1.0,-1.0,0.0,.0,.0,0.0],[1.0,0.0,-1.0,.0,.0,0.0],[1.0,0.0,.0,-1.0,.0,0.0],[1.0,0.0,.0,.0,-1.0,0.0]]#y0<3.99
+    B=[[[-1.0,1.0],[-1.0,1.0],[-1.0,1.0],[-1.0,1.0],[-1.0,1.0]]]
+    x=[]
+    for i in range(len(B[0])):
+        x.append(np.random.rand(1)*(B[0][i][1]-B[0][i][0])+B[0][i][0])
+    x=[[-0.3,0.0,0.0,0.4,0.1]]
+    ip=torch.tensor(x,dtype=torch.float).view(1,-1)
+    out=test(ip)
+    print(ip)
+    #torch.save(test.state_dict(),"acasxu.pt")
+    #ACASX_LP=LayerProperty(test,data)
+    #ACASX_LP.get_pattern()
+    #print(len(ACASX_LP.layer_patterns))
+    # z=Algorithm1.solve(test,ip,B,A)
+    # print(z)
+    packs=netProperty.get_decision_pattern(test,ip)
+    # print(test(ip))
+    verifier=NetVerifier()
+    
+    for pack,precondition in zip(packs,B):
+        pattern, output, input = pack
+        for i in range(len(pattern)-1,0,-1):
+            for id in range(len(pattern[-1 - i])):
+                pattern[i][id] = 'skip'
+            print(i)
+            print(verifier.composeDP(test,precondition,A,pattern,input))
 if __name__=='__main__':
     main()

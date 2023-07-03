@@ -14,17 +14,21 @@ class NetVerifier:
         'off':-1,
         'skip':0
     }
-    large=10e6
-    small=10e-6
+    large=10e3
+    small=10e-3
     def __init__(self):
         pass
-    def composeDP(self,net:torch.nn.Module,postcondition:list, pattern:list,inp:torch.Tensor):
+    def composeDP(self,net:torch.nn.Module,precondition:list,postcondition:list, pattern:list,inp:torch.Tensor):
         DP=MarabouCore.InputQuery()
         num_nodes=self.getNumNodes(net,inp)
         DP.setNumberOfVariables(num_nodes)
         for i in range(num_nodes):
             DP.setLowerBound(i,-self.large)
             DP.setUpperBound(i,self.large)
+        for i in range(len(precondition)):
+            DP.setLowerBound(i,precondition[i][0])
+
+            DP.setUpperBound(i,precondition[i][1])
         var={
             "DP":DP,
             "base":0,
@@ -53,24 +57,25 @@ class NetVerifier:
         out=module(var['input'])
         for i in range(params[0].shape[0]):
             equation=MarabouCore.Equation()
-            equation.addAddend(-1,var['base']+i+param.shape[1])
+            equation.addAddend(-1,var['base']+i+params[0].shape[1])
             for j in range(params[0].shape[1]):
                 equation.addAddend(params[0][i][j],var['base']+j)
             equation.setScalar(-params[1][i])
             var['DP'].addEquation(equation)
         var['input']=out
-        var['base']+=params[0].shape[0]+params[0].shape[1]
+        var['base']+=params[0].shape[1]
         return var
     def ReLUDP(self,module,var,pattern):
         flat=module(var['input']).view(var['input'].shape[0],-1)
         for i in range(len(pattern[var['patternid']])):
-            MarabouCore.addReLuConstraint(var["DP"],var['base']+i,var['base']+i+len(pattern[var['patternid']]))
-            var['DP'].setLowerBound(var['base']+i+len(pattern[var['patternid']]),0)
-            if self.encode_status[pattern[i]]>0:
+            a=var['base']+i+len(pattern[var['patternid']])
+            MarabouCore.addReluConstraint(var["DP"],var['base']+i,var['base']+i+len(pattern[var['patternid']]))
+            #var['DP'].setLowerBound(var['base']+i+len(pattern[var['patternid']]),0)
+            if self.encode_status[pattern[var['patternid']][i]]>0:
                 var['DP'].setLowerBound(var['base']+i+len(pattern[var['patternid']]),self.small)
-            if self.encode_status[pattern[i]]<0:
+            if self.encode_status[pattern[var['patternid']][i]]<0:
                 var['DP'].setUpperBound(var['base'] + i + len(pattern[var['patternid']]), 0)
-        var['base']+=2*len(pattern)
+        var['base']+=len(pattern[var['patternid']])
         var['input']=module(var['input'])
         var["patternid"]+=1
         return var
@@ -78,33 +83,34 @@ class NetVerifier:
     def outDP(self,postcondition,var):
         disjunction=[]
         for condition in postcondition:
-            equationtype=MarabouCore.EquationType(1)
+            equationtype=MarabouCore.Equation.EquationType(1)
             equation=MarabouCore.Equation(equationtype)
             for i in range(len(condition)-1):
                 equation.addAddend(condition[i],i+var['base'])
             equation.setScalar(-condition[-1])
-            disjunction.append(equation)
+            disjunction.append([equation])
         MarabouCore.addDisjunctionConstraint(var["DP"],disjunction)
         return var["DP"]
     def getNumNodes(self,net,inp):
+
         # Define a dictionary to store the layer outputs
         layer_outputs = {}
         # Define a forward hook function
         def forward_hook(module, input, output):
-            layer_outputs[module] = output.detach().numpy()
+            layer_outputs[module] = output
             # Register the forward hook for each layer
         for name, module in net.named_modules():
             module.register_forward_hook(forward_hook)
         # Perform forward pass
         output_tensor = net(inp)
-        flatten=inp.view(inp.shape[0],-1)
 
-        res=flatten.shape[1]
+        flatten=inp.view(-1)
+        res=flatten.shape[0]
         # Access the forward output of each layer
         for module, output in layer_outputs.items():
             if module.__class__.__name__ != net.__class__.__name__:
-                flatten =output.view(output.shape[0],-1)
-                res+=flatten.shape[1]
+                flatten=output.view(-1)
+                res+=flatten.shape[0]
         return res
     @classmethod
     def DP(cls, pattern:list,property:list,net:torch.nn.Module):
