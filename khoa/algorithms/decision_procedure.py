@@ -39,7 +39,7 @@ class MarabouCoreDP():
         inputQuery = self.__process_linear_hidden_layer(layer_info, inputQuery)
 
     ## Run Marabou to solve the query
-    options = createOptions(verbosity=0)
+    options = createOptions(verbosity=0, snc=True)
     result = list(MarabouCore.solve(inputQuery, options, ""))
     result.append(inputQuery)
     return result
